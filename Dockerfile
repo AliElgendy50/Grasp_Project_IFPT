@@ -1,3 +1,4 @@
+
 FROM ros:humble
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -61,7 +62,48 @@ RUN pip install tqdm requests
 # 8. Build the workspace
 RUN /bin/bash -c "source /opt/ros/humble/setup.bash && colcon build --symlink-install"
 
-# 9. Source ROS setup in new shells
+
+# 9. Install OpenVINO using pip from PyPI
+RUN pip install openvino
+
+
+
+# 10. Source OpenVINO environment variables in new shells
+RUN echo "source /opt/intel/openvino/bin/setupvars.sh" >> ~/.bashrc
+
+
+# 11. Install dependencies including Eigen
+RUN apt-get update && apt-get install -y \
+    libeigen3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 12. Install PCL (Point Cloud Library)
+RUN apt-get update && apt-get install -y \
+    libpcl-dev \
+    && rm -rf /var/lib/apt/lists/*
+    
+# 13. Install OpenCV
+RUN apt-get update && apt-get install -y \
+    libopencv-dev \
+    python3-opencv \
+    && rm -rf /var/lib/apt/lists/*
+    
+# 14. Install dependencies for GPD (Grasp Pose Detection)
+RUN apt-get update && apt-get install -y \
+    libboost-all-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 15. Clone official GPD repository and build
+RUN cd $DEPS_PATH && \
+    git clone https://github.com/atenpas/gpd.git && \
+    cd gpd && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make -j$(nproc) && \
+    make install
+
+
+# 16. Source ROS setup in new shells
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
     echo "source /home/ros_ws/install/setup.bash" >> ~/.bashrc
 
